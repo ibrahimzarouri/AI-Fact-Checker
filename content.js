@@ -611,6 +611,63 @@ function detectVideoPlatform() {
   return null;
 }
 
+// Capture tab audio using a stream ID from chrome.tabCapture.getMediaStreamId
+async function captureTabAudio(streamId, duration) {
+  try {
+    const constraints = {
+      audio: {
+        mandatory: {
+          chromeMediaSource: 'tab',
+          chromeMediaSourceId: streamId
+        }
+      }
+    };
+
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+    const mimeTypes = [
+      'audio/webm;codecs=opus',
+      'audio/webm'
+    ];
+    let mimeType = 'audio/webm';
+    for (const type of mimeTypes) {
+      if (MediaRecorder.isTypeSupported(type)) {
+        mimeType = type;
+        break;
+      }
+    }
+
+    return await new Promise((resolve, reject) => {
+      const chunks = [];
+      const recorder = new MediaRecorder(stream, { mimeType });
+
+      recorder.ondataavailable = e => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      recorder.onerror = e => {
+        stream.getTracks().forEach(t => t.stop());
+        reject(new Error(e.error ? e.error.message : 'Recorder error'));
+      };
+
+      recorder.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(chunks, { type: mimeType });
+        resolve({ blob, mimeType });
+      };
+
+      recorder.start();
+      setTimeout(() => {
+        if (recorder.state === 'recording') recorder.stop();
+      }, duration * 1000);
+    });
+
+  } catch (err) {
+    console.error('Tab audio capture failed:', err);
+    return { error: err.message };
+  }
+}
+
 // Main function to extract video content (audio + metadata)
 async function extractVideoContent() {
   console.log("🎥 Starting video content extraction...");
@@ -631,7 +688,7 @@ async function extractVideoContent() {
     console.log("🎵 Attempting Tab Capture for audio extraction...");
     
     try {
-      // Send request to background script to start Tab Capture
+      // Send request to background script to get stream ID
       console.log("📤 Sending START_TAB_CAPTURE message to background...");
       const message = {
         type: 'START_TAB_CAPTURE',
@@ -643,16 +700,27 @@ async function extractVideoContent() {
         }
       };
       console.log("Message details:", message);
-      
+
       const tabCaptureResult = await chrome.runtime.sendMessage(message);
       console.log("📥 Received response from background:", tabCaptureResult);
-      
-      if (tabCaptureResult && tabCaptureResult.success) {
-        console.log("✅ Tab Capture initiated successfully");
+
+      if (tabCaptureResult && tabCaptureResult.success && tabCaptureResult.streamId) {
+        console.log("✅ Obtained stream ID, starting recording...");
+        const recordDuration = Math.min(Math.max(metadata.duration || 60, 15), 60);
+        const audioCapture = await captureTabAudio(tabCaptureResult.streamId, recordDuration);
+
+        if (audioCapture.error || !audioCapture.blob) {
+          throw new Error(audioCapture.error || 'Failed to capture tab audio');
+        }
+
+        console.log("✅ Tab audio captured:", audioCapture.blob.size, "bytes");
+
         return {
           platform,
           metadata,
-          audio: 'tab_capture_processing',
+          audio: audioCapture.blob,
+          duration: recordDuration,
+          format: audioCapture.mimeType,
           success: true,
           method: 'tab_capture'
         };
@@ -660,7 +728,7 @@ async function extractVideoContent() {
         console.log("❌ Tab Capture failed:", tabCaptureResult?.error);
         throw new Error(`Tab Capture failed: ${tabCaptureResult?.error || 'Unknown error'}`);
       }
-      
+
     } catch (tabCaptureError) {
       console.log("❌ Tab Capture not available, falling back to direct audio extraction...");
       console.log("Tab Capture error:", tabCaptureError.message);

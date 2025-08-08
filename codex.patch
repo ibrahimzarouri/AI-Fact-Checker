@@ -1,0 +1,619 @@
+diff --git a/background.js b/background.js
+index ac65a12eea4a133c0cdc8df9f16ab3e973b0f794..e0789a74f3745fc2ae782a9ee2540eaf2b164596 100644
+--- a/background.js
++++ b/background.js
+@@ -342,272 +342,50 @@ function splitTextIntoSentences(text) {
+     .filter(sentence => {
+       const lower = sentence.toLowerCase();
+       return !lower.match(/^(teilen|drucken|weiter|zurück|mehr|weniger|klicken|hier|link|cookie|datenschutz|impressum)$/) &&
+              !lower.includes('RACHE DER MULLAHS') &&
+              !lower.includes('IRAN-DROHNEN') &&
+              !sentence.match(/\+\+\+.*\+\+\+/) &&
+              !lower.includes('breaking news');
+     })
+     .filter(sentence => {
+       // ENHANCED: Filter out navigation and UI elements more aggressively
+       const navigationKeywords = [
+         'zur startseite', 'zum artikel', 'weiterlesen', 'mehr dazu',
+         'newsletter', 'anzeige', 'werbung', 'sponsored', 'partnerinhalt'
+       ];
+       const lower = sentence.toLowerCase();
+       return !navigationKeywords.some(keyword => lower.includes(keyword));
+     });
+   
+   console.log(`Sentence splitting result: ${sentences.length} valid sentences`);
+   console.log('Sample sentences:', sentences.slice(0, 3).map(s => s.substring(0, 50) + '...'));
+   console.log('====================================');
+   
+   return sentences;
+ }
+ 
+-/* =================================================================
+-                    TAB CAPTURE AUDIO PROCESSING
+-   ================================================================= */
+-
+-// Process audio stream captured from Tab Capture API
+-async function processTabAudioStream(stream, videoData, tabId) {
+-  return new Promise((resolve, reject) => {
+-    console.log("🎙️ Processing Tab Capture audio stream...");
+-    console.log("Stream tracks:", stream.getTracks().map(t => ({ 
+-      kind: t.kind, 
+-      enabled: t.enabled, 
+-      readyState: t.readyState 
+-    })));
+-    
+-    // Create MediaRecorder to capture the tab audio
+-    const mimeTypes = [
+-      'audio/webm;codecs=opus',
+-      'audio/webm',
+-      'audio/mp4',
+-      'audio/mpeg'
+-    ];
+-    
+-    let mediaRecorder;
+-    let mimeType = 'audio/webm';
+-    
+-    // Find supported mime type
+-    for (const type of mimeTypes) {
+-      if (MediaRecorder.isTypeSupported(type)) {
+-        mimeType = type;
+-        break;
+-      }
+-    }
+-    
+-    try {
+-      mediaRecorder = new MediaRecorder(stream, { mimeType });
+-      console.log("📹 MediaRecorder created with:", mimeType);
+-    } catch (error) {
+-      console.error("MediaRecorder creation failed:", error);
+-      reject(new Error(`MediaRecorder creation failed: ${error.message}`));
+-      return;
+-    }
+-    
+-    const audioChunks = [];
+-    
+-    mediaRecorder.ondataavailable = (event) => {
+-      if (event.data.size > 0) {
+-        console.log("📊 Audio data chunk:", event.data.size, "bytes");
+-        audioChunks.push(event.data);
+-      }
+-    };
+-    
+-    mediaRecorder.onstop = async () => {
+-      console.log("🔴 Recording stopped, processing", audioChunks.length, "chunks");
+-      
+-      // Stop all stream tracks to free resources
+-      stream.getTracks().forEach(track => {
+-        track.stop();
+-        console.log("Stopped track:", track.kind);
+-      });
+-      
+-      if (audioChunks.length === 0) {
+-        reject(new Error("No audio data captured"));
+-        return;
+-      }
+-      
+-      // Create final audio blob
+-      const audioBlob = new Blob(audioChunks, { type: mimeType });
+-      console.log("🎵 Final audio blob:", {
+-        size: audioBlob.size,
+-        type: audioBlob.type,
+-        sizeKB: Math.round(audioBlob.size / 1024)
+-      });
+-      
+-      if (audioBlob.size < 1000) {
+-        console.warn("⚠️ Audio blob is very small, might be empty or corrupted");
+-      }
+-      
+-      try {
+-        // Send audio to Whisper for transcription
+-        console.log("🚀 Sending to Whisper API...");
+-        const transcription = await transcribeAudioWithWhisper(
+-          audioBlob, 
+-          { 
+-            platform: videoData.platform, 
+-            format: mimeType,
+-            ...videoData.metadata 
+-          }
+-        );
+-        
+-        if (transcription.success) {
+-          console.log("✅ Transcription successful:", transcription.text.length, "characters");
+-          
+-          // Analyze the transcript with BOTH GPT-4.1-nano AND ClaimBuster
+-          console.log("🚀 Starting dual analysis (GPT + ClaimBuster) of transcript...");
+-          
+-          const analysisContent = {
+-            transcript: transcription.text,
+-            metadata: videoData.metadata,
+-            platform: videoData.platform,
+-            duration: videoData.duration,
+-            segments: transcription.segments,
+-            language: transcription.language
+-          };
+-          
+-          // Run both analyses in parallel
+-          const [gptResult, claimbusterResult] = await Promise.allSettled([
+-            analyzeVideoWithGPT(analysisContent),
+-            analyzeWithClaimBuster({ 
+-              headline: videoData.metadata.title || '', 
+-              article: transcription.text 
+-            })
+-          ]);
+-          
+-          console.log("Dual video analysis completed");
+-          console.log("GPT result:", gptResult.status);
+-          console.log("ClaimBuster result:", claimbusterResult.status);
+-          
+-          // Process GPT result
+-          let gptAnalysis = null;
+-          if (gptResult.status === 'fulfilled' && gptResult.value.success) {
+-            gptAnalysis = gptResult.value.analysis;
+-          }
+-          
+-          // Process ClaimBuster result  
+-          let claimbusterAnalysis = null;
+-          if (claimbusterResult.status === 'fulfilled' && claimbusterResult.value.success) {
+-            claimbusterAnalysis = claimbusterResult.value.analysis;
+-          }
+-          
+-          // Send results back to content script with both analyses
+-          const result = {
+-            success: true,
+-            type: 'video',
+-            platform: videoData.platform,
+-            metadata: videoData.metadata,
+-            transcription: transcription,
+-            // Primary analysis (GPT)
+-            analysis: gptAnalysis || {
+-              overall_verdict: 'ERROR',
+-              summary: 'Video analysis failed',
+-              detailed_analysis: 'Could not analyze video transcript'
+-            },
+-            // Dual analysis results
+-            gpt: gptAnalysis ? {
+-              success: true,
+-              analysis: gptAnalysis
+-            } : {
+-              success: false,
+-              error: gptResult.reason?.message || 'GPT analysis failed'
+-            },
+-            claimbuster: claimbusterAnalysis ? {
+-              success: true,
+-              analysis: claimbusterAnalysis  
+-            } : {
+-              success: false,
+-              error: claimbusterResult.reason?.message || 'ClaimBuster analysis failed'
+-            },
+-            hash: videoData.hash,
+-            method: 'tab_capture'
+-          };
+-          
+-          await safelySendMessageToTab(tabId, {
+-            type: 'FACTCHECK_RESULT',
+-            result: result
+-          });
+-          
+-          resolve();
+-          
+-        } else {
+-          console.error("❌ Transcription failed:", transcription.error);
+-          
+-          // Fall back to metadata analysis
+-          console.log("🔄 Falling back to metadata-only analysis...");
+-          const fallbackResult = await analyzeVideoMetadataOnly(videoData);
+-          
+-          await safelySendMessageToTab(tabId, {
+-            type: 'FACTCHECK_RESULT',
+-            result: {
+-              ...fallbackResult,
+-              method: 'tab_capture_fallback',
+-              transcription_error: transcription.error
+-            }
+-          });
+-          
+-          resolve();
+-        }
+-        
+-      } catch (error) {
+-        console.error("❌ Audio processing pipeline failed:", error);
+-        reject(error);
+-      }
+-    };
+-    
+-    mediaRecorder.onerror = (error) => {
+-      console.error("❌ MediaRecorder error:", error);
+-      stream.getTracks().forEach(track => track.stop());
+-      reject(new Error(`MediaRecorder error: ${error.error || error}`));
+-    };
+-    
+-    try {
+-      // Start recording for a reasonable duration
+-      const maxDuration = Math.min(videoData.duration * 1000 || 60000, 300000); // Max 5 minutes
+-      console.log(`🎬 Starting recording for ${maxDuration/1000} seconds...`);
+-      
+-      mediaRecorder.start(1000); // Collect data every second
+-      
+-      // Stop recording after the video duration or max time
+-      setTimeout(() => {
+-        if (mediaRecorder.state === 'recording') {
+-          console.log("⏰ Recording timeout, stopping...");
+-          mediaRecorder.stop();
+-        }
+-      }, maxDuration);
+-      
+-    } catch (error) {
+-      console.error("❌ Failed to start recording:", error);
+-      stream.getTracks().forEach(track => track.stop());
+-      reject(new Error(`Failed to start recording: ${error.message}`));
+-    }
+-  });
+-}
+-
+ /* =================================================================
+                     WHISPER API INTEGRATION
+    ================================================================= */
+ 
+ // Function to transcribe audio using OpenAI Whisper API
+ async function transcribeAudioWithWhisper(audioBlob, metadata = {}) {
+   let timeoutId;
+   
+   try {
+     console.log('🎵 Starting Whisper transcription...', {
+       audioSize: audioBlob?.size,
+       audioType: audioBlob?.type,
+       platform: metadata.platform,
+       hasBlob: !!audioBlob,
+       format: metadata.format || audioBlob.type || 'audio/webm'
+     });
+     
+     // Validate audio blob
+     if (!audioBlob) {
+       throw new Error('No audio blob provided for transcription');
+     }
+     
+     if (audioBlob.size === 0) {
+       throw new Error('Audio blob is empty (0 bytes)');
+     }
+diff --git a/background.js b/background.js
+index ac65a12eea4a133c0cdc8df9f16ab3e973b0f794..e0789a74f3745fc2ae782a9ee2540eaf2b164596 100644
+--- a/background.js
++++ b/background.js
+@@ -1676,137 +1454,75 @@ Article: ${fullText}`;
+     }
+ 
+     const data = await response.json();
+     console.log('Quick summary completed successfully');
+     return data.choices[0].message.content;
+   } catch (error) {
+     if (timeoutId) {
+       clearTimeout(timeoutId);
+     }
+     
+     console.error("Error getting quick summary:", error);
+     
+     if (error.message.includes('timeout')) {
+       return "FRAGWÜRDIG - Quick analysis timed out.";
+     }
+     return "FRAGWÜRDIG - Unable to analyze due to technical error.";
+   }
+ }
+ 
+ // MODIFIED: Enhanced message listener to call both APIs
+ // Tab Capture handler for reliable audio extraction
+ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+   console.log("Background script received message:", message.type);
+   
+   if (message.type === 'START_TAB_CAPTURE') {
+-    console.log("=== TAB CAPTURE REQUEST RECEIVED ===");
+-    console.log("🎵 Starting Tab Capture for audio extraction...");
++    console.log("=== TAB CAPTURE STREAM ID REQUEST ===");
+     console.log("Request from tab:", sender.tab?.id);
+-    console.log("Video data:", message.videoData);
+-    console.log("====================================");
+-    
+-    // Check if tabCapture API is available with detailed debugging
+-    console.log("🔍 Checking chrome.tabCapture availability...");
+-    console.log("chrome.tabCapture exists:", !!chrome.tabCapture);
+-    
+-    if (chrome.tabCapture) {
+-      console.log("chrome.tabCapture properties:", Object.getOwnPropertyNames(chrome.tabCapture));
+-      console.log("chrome.tabCapture.capture exists:", !!chrome.tabCapture.capture);
+-    }
+-    
+-    if (!chrome.tabCapture) {
+-      console.error("❌ chrome.tabCapture API not available - check permissions in manifest");
+-      sendResponse({ 
+-        success: false, 
+-        error: "tabCapture API not available - missing permission in manifest.json?" 
+-      });
+-      return;
+-    }
+-    
+-    if (!chrome.tabCapture.capture) {
+-      console.error("❌ chrome.tabCapture.capture function not available - Manifest V3 issue?");
+-      console.error("Available methods:", Object.getOwnPropertyNames(chrome.tabCapture));
+-      sendResponse({ 
+-        success: false, 
+-        error: "tabCapture.capture function not available - possible Manifest V3 compatibility issue" 
++
++    if (!chrome.tabCapture || !chrome.tabCapture.getMediaStreamId) {
++      console.error("❌ tabCapture.getMediaStreamId not available");
++      sendResponse({
++        success: false,
++        error: "tabCapture.getMediaStreamId not available"
+       });
+       return;
+     }
+-    
+-    // Use Tab Capture API to get system audio
+-    console.log("📹 Calling chrome.tabCapture.capture...");
+-    try {
+-      chrome.tabCapture.capture({
+-        audio: true,
+-        video: false
+-      }, (stream) => {
+-      if (chrome.runtime.lastError) {
+-        console.error("Tab Capture failed:", chrome.runtime.lastError.message);
+-        sendResponse({ 
+-          success: false, 
+-          error: chrome.runtime.lastError.message 
+-        });
+-        return;
+-      }
+-      
+-      if (!stream) {
+-        console.error("No stream received from Tab Capture");
+-        sendResponse({ 
+-          success: false, 
+-          error: "No audio stream available" 
+-        });
++
++    chrome.tabCapture.getMediaStreamId({ targetTabId: sender.tab.id }, (streamId) => {
++      if (chrome.runtime.lastError || !streamId) {
++        const err = chrome.runtime.lastError?.message || 'Failed to get stream ID';
++        console.error("Failed to get stream ID:", err);
++        sendResponse({ success: false, error: err });
+         return;
+       }
+-      
+-      console.log("✅ Tab Capture successful, processing audio...");
+-      
+-      // Process the audio stream directly in background script
+-      processTabAudioStream(stream, message.videoData, sender.tab.id)
+-        .then(() => {
+-          console.log("Audio processing initiated");
+-          sendResponse({ success: true });
+-        })
+-        .catch(error => {
+-          console.error("Audio processing failed:", error);
+-          sendResponse({ 
+-            success: false, 
+-            error: error.message 
+-          });
+-        });
+-      });
+-      
+-    } catch (tabCaptureError) {
+-      console.error("❌ Exception calling chrome.tabCapture.capture:", tabCaptureError.name, tabCaptureError.message);
+-      sendResponse({ 
+-        success: false, 
+-        error: `Tab Capture exception: ${tabCaptureError.message}` 
+-      });
+-      return;
+-    }
+-    
+-    return true; // Keep message channel open for async response
+-    
++      console.log("✅ Obtained stream ID");
++      sendResponse({ success: true, streamId });
++    });
++
++    return true;
++
+   } else if (message.type === 'VIDEO_CONTENT') {
+     console.log("Received video content from tab:", sender.tab.id);
+     console.log('Video platform:', message.data.platform);
+     console.log('Video metadata:', message.data.metadata);
+     console.log('Audio data size:', message.data.audioData ? message.data.audioData.byteLength : 'No audio');
+     console.log('Audio type:', message.data.audioType);
+     console.log('Video duration:', message.data.duration, 'seconds');
+     console.log('===============================');
+     
+     // IMPORTANT: Send immediate response to prevent timeout
+     sendResponse({ received: true, timestamp: Date.now(), type: 'video' });
+     
+     // Process the video content
+     const processVideo = async () => {
+       try {
+         console.log('🎬 Starting video content processing...');
+         
+         // Check if tab still exists before starting intensive work
+         try {
+           await chrome.tabs.get(sender.tab.id);
+         } catch (error) {
+           console.log("Tab no longer exists, canceling video analysis");
+           return;
+         }
+ 
+
+diff --git a/content.js b/content.js
+index b3151744fc8cfd8c219fb8b050258390bb124a56..7e55762d7350360fc7b4eb8fe83028add1cdf04c 100644
+--- a/content.js
++++ b/content.js
+@@ -589,100 +589,168 @@ if (isNewsSite) {
+   document.body.appendChild(indicator);
+   
+   // Add click event
+   indicator.addEventListener('click', function() {
+     toggleResultsPanel();
+   });
+ }
+ 
+ /* =================================================================
+                   MULTIMEDIA CONTENT EXTRACTION
+    ================================================================= */
+ 
+ // Function to detect video platform
+ function detectVideoPlatform() {
+   const hostname = window.location.hostname.toLowerCase();
+   const pathname = window.location.pathname.toLowerCase();
+   
+   if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
+     return 'youtube';
+   } else if (hostname.includes('tiktok.com')) {
+     return 'tiktok';
+   }
+   return null;
+ }
+ 
++// Capture tab audio using a stream ID from chrome.tabCapture.getMediaStreamId
++async function captureTabAudio(streamId, duration) {
++  try {
++    const constraints = {
++      audio: {
++        mandatory: {
++          chromeMediaSource: 'tab',
++          chromeMediaSourceId: streamId
++        }
++      }
++    };
++
++    const stream = await navigator.mediaDevices.getUserMedia(constraints);
++
++    const mimeTypes = [
++      'audio/webm;codecs=opus',
++      'audio/webm'
++    ];
++    let mimeType = 'audio/webm';
++    for (const type of mimeTypes) {
++      if (MediaRecorder.isTypeSupported(type)) {
++        mimeType = type;
++        break;
++      }
++    }
++
++    return await new Promise((resolve, reject) => {
++      const chunks = [];
++      const recorder = new MediaRecorder(stream, { mimeType });
++
++      recorder.ondataavailable = e => {
++        if (e.data.size > 0) chunks.push(e.data);
++      };
++
++      recorder.onerror = e => {
++        stream.getTracks().forEach(t => t.stop());
++        reject(new Error(e.error ? e.error.message : 'Recorder error'));
++      };
++
++      recorder.onstop = () => {
++        stream.getTracks().forEach(t => t.stop());
++        const blob = new Blob(chunks, { type: mimeType });
++        resolve({ blob, mimeType });
++      };
++
++      recorder.start();
++      setTimeout(() => {
++        if (recorder.state === 'recording') recorder.stop();
++      }, duration * 1000);
++    });
++
++  } catch (err) {
++    console.error('Tab audio capture failed:', err);
++    return { error: err.message };
++  }
++}
++
+ // Main function to extract video content (audio + metadata)
+ async function extractVideoContent() {
+   console.log("🎥 Starting video content extraction...");
+   
+   const platform = detectVideoPlatform();
+   if (!platform) {
+     console.log("Not a supported video platform");
+     return null;
+   }
+   
+   console.log(`Detected platform: ${platform}`);
+   
+   try {
+     // Get video metadata
+     const metadata = await extractVideoMetadata(platform);
+     
+     // Use Tab Capture API for reliable audio extraction
+     console.log("🎵 Attempting Tab Capture for audio extraction...");
+     
+     try {
+-      // Send request to background script to start Tab Capture
++      // Send request to background script to get stream ID
+       console.log("📤 Sending START_TAB_CAPTURE message to background...");
+       const message = {
+         type: 'START_TAB_CAPTURE',
+         videoData: {
+           platform: platform,
+           metadata: metadata,
+           duration: metadata.duration || 60,
+           hash: generateContentHash(metadata.title || metadata.url || window.location.href)
+         }
+       };
+       console.log("Message details:", message);
+-      
++
+       const tabCaptureResult = await chrome.runtime.sendMessage(message);
+       console.log("📥 Received response from background:", tabCaptureResult);
+-      
+-      if (tabCaptureResult && tabCaptureResult.success) {
+-        console.log("✅ Tab Capture initiated successfully");
++
++      if (tabCaptureResult && tabCaptureResult.success && tabCaptureResult.streamId) {
++        console.log("✅ Obtained stream ID, starting recording...");
++        const recordDuration = Math.min(Math.max(metadata.duration || 60, 15), 60);
++        const audioCapture = await captureTabAudio(tabCaptureResult.streamId, recordDuration);
++
++        if (audioCapture.error || !audioCapture.blob) {
++          throw new Error(audioCapture.error || 'Failed to capture tab audio');
++        }
++
++        console.log("✅ Tab audio captured:", audioCapture.blob.size, "bytes");
++
+         return {
+           platform,
+           metadata,
+-          audio: 'tab_capture_processing',
++          audio: audioCapture.blob,
++          duration: recordDuration,
++          format: audioCapture.mimeType,
+           success: true,
+           method: 'tab_capture'
+         };
+       } else {
+         console.log("❌ Tab Capture failed:", tabCaptureResult?.error);
+         throw new Error(`Tab Capture failed: ${tabCaptureResult?.error || 'Unknown error'}`);
+       }
+-      
++
+     } catch (tabCaptureError) {
+       console.log("❌ Tab Capture not available, falling back to direct audio extraction...");
+       console.log("Tab Capture error:", tabCaptureError.message);
+       
+       // Check if the error suggests permission issues or Tab Capture not working
+       if (tabCaptureError.message.includes('permission') || tabCaptureError.message.includes('not allowed')) {
+         console.log("🔒 Tab Capture permission issue - skipping direct capture (known to fail on protected content)");
+         return {
+           platform,
+           metadata,
+           audio: null,
+           error: `Tab Capture permission denied and direct capture not reliable on ${platform}`,
+           success: false
+         };
+       }
+       
+       // Fallback to old method if Tab Capture fails for other reasons
+       console.log("Starting fallback audio extraction...");
+       const audioResult = await extractAudioFromVideo(platform);
+       console.log("Fallback audio extraction result:", audioResult);
+       
+       if (!audioResult || !audioResult.success) {
+         const errorMsg = audioResult?.error || 'Unknown audio extraction error';
+         console.error("Both Tab Capture and direct audio extraction failed:", errorMsg);
+         return {

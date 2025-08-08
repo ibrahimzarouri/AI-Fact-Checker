@@ -365,228 +365,6 @@ function splitTextIntoSentences(text) {
 }
 
 /* =================================================================
-                    TAB CAPTURE AUDIO PROCESSING
-   ================================================================= */
-
-// Process audio stream captured from Tab Capture API
-async function processTabAudioStream(stream, videoData, tabId) {
-  return new Promise((resolve, reject) => {
-    console.log("🎙️ Processing Tab Capture audio stream...");
-    console.log("Stream tracks:", stream.getTracks().map(t => ({ 
-      kind: t.kind, 
-      enabled: t.enabled, 
-      readyState: t.readyState 
-    })));
-    
-    // Create MediaRecorder to capture the tab audio
-    const mimeTypes = [
-      'audio/webm;codecs=opus',
-      'audio/webm',
-      'audio/mp4',
-      'audio/mpeg'
-    ];
-    
-    let mediaRecorder;
-    let mimeType = 'audio/webm';
-    
-    // Find supported mime type
-    for (const type of mimeTypes) {
-      if (MediaRecorder.isTypeSupported(type)) {
-        mimeType = type;
-        break;
-      }
-    }
-    
-    try {
-      mediaRecorder = new MediaRecorder(stream, { mimeType });
-      console.log("📹 MediaRecorder created with:", mimeType);
-    } catch (error) {
-      console.error("MediaRecorder creation failed:", error);
-      reject(new Error(`MediaRecorder creation failed: ${error.message}`));
-      return;
-    }
-    
-    const audioChunks = [];
-    
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        console.log("📊 Audio data chunk:", event.data.size, "bytes");
-        audioChunks.push(event.data);
-      }
-    };
-    
-    mediaRecorder.onstop = async () => {
-      console.log("🔴 Recording stopped, processing", audioChunks.length, "chunks");
-      
-      // Stop all stream tracks to free resources
-      stream.getTracks().forEach(track => {
-        track.stop();
-        console.log("Stopped track:", track.kind);
-      });
-      
-      if (audioChunks.length === 0) {
-        reject(new Error("No audio data captured"));
-        return;
-      }
-      
-      // Create final audio blob
-      const audioBlob = new Blob(audioChunks, { type: mimeType });
-      console.log("🎵 Final audio blob:", {
-        size: audioBlob.size,
-        type: audioBlob.type,
-        sizeKB: Math.round(audioBlob.size / 1024)
-      });
-      
-      if (audioBlob.size < 1000) {
-        console.warn("⚠️ Audio blob is very small, might be empty or corrupted");
-      }
-      
-      try {
-        // Send audio to Whisper for transcription
-        console.log("🚀 Sending to Whisper API...");
-        const transcription = await transcribeAudioWithWhisper(
-          audioBlob, 
-          { 
-            platform: videoData.platform, 
-            format: mimeType,
-            ...videoData.metadata 
-          }
-        );
-        
-        if (transcription.success) {
-          console.log("✅ Transcription successful:", transcription.text.length, "characters");
-          
-          // Analyze the transcript with BOTH GPT-4.1-nano AND ClaimBuster
-          console.log("🚀 Starting dual analysis (GPT + ClaimBuster) of transcript...");
-          
-          const analysisContent = {
-            transcript: transcription.text,
-            metadata: videoData.metadata,
-            platform: videoData.platform,
-            duration: videoData.duration,
-            segments: transcription.segments,
-            language: transcription.language
-          };
-          
-          // Run both analyses in parallel
-          const [gptResult, claimbusterResult] = await Promise.allSettled([
-            analyzeVideoWithGPT(analysisContent),
-            analyzeWithClaimBuster({ 
-              headline: videoData.metadata.title || '', 
-              article: transcription.text 
-            })
-          ]);
-          
-          console.log("Dual video analysis completed");
-          console.log("GPT result:", gptResult.status);
-          console.log("ClaimBuster result:", claimbusterResult.status);
-          
-          // Process GPT result
-          let gptAnalysis = null;
-          if (gptResult.status === 'fulfilled' && gptResult.value.success) {
-            gptAnalysis = gptResult.value.analysis;
-          }
-          
-          // Process ClaimBuster result  
-          let claimbusterAnalysis = null;
-          if (claimbusterResult.status === 'fulfilled' && claimbusterResult.value.success) {
-            claimbusterAnalysis = claimbusterResult.value.analysis;
-          }
-          
-          // Send results back to content script with both analyses
-          const result = {
-            success: true,
-            type: 'video',
-            platform: videoData.platform,
-            metadata: videoData.metadata,
-            transcription: transcription,
-            // Primary analysis (GPT)
-            analysis: gptAnalysis || {
-              overall_verdict: 'ERROR',
-              summary: 'Video analysis failed',
-              detailed_analysis: 'Could not analyze video transcript'
-            },
-            // Dual analysis results
-            gpt: gptAnalysis ? {
-              success: true,
-              analysis: gptAnalysis
-            } : {
-              success: false,
-              error: gptResult.reason?.message || 'GPT analysis failed'
-            },
-            claimbuster: claimbusterAnalysis ? {
-              success: true,
-              analysis: claimbusterAnalysis  
-            } : {
-              success: false,
-              error: claimbusterResult.reason?.message || 'ClaimBuster analysis failed'
-            },
-            hash: videoData.hash,
-            method: 'tab_capture'
-          };
-          
-          await safelySendMessageToTab(tabId, {
-            type: 'FACTCHECK_RESULT',
-            result: result
-          });
-          
-          resolve();
-          
-        } else {
-          console.error("❌ Transcription failed:", transcription.error);
-          
-          // Fall back to metadata analysis
-          console.log("🔄 Falling back to metadata-only analysis...");
-          const fallbackResult = await analyzeVideoMetadataOnly(videoData);
-          
-          await safelySendMessageToTab(tabId, {
-            type: 'FACTCHECK_RESULT',
-            result: {
-              ...fallbackResult,
-              method: 'tab_capture_fallback',
-              transcription_error: transcription.error
-            }
-          });
-          
-          resolve();
-        }
-        
-      } catch (error) {
-        console.error("❌ Audio processing pipeline failed:", error);
-        reject(error);
-      }
-    };
-    
-    mediaRecorder.onerror = (error) => {
-      console.error("❌ MediaRecorder error:", error);
-      stream.getTracks().forEach(track => track.stop());
-      reject(new Error(`MediaRecorder error: ${error.error || error}`));
-    };
-    
-    try {
-      // Start recording for a reasonable duration
-      const maxDuration = Math.min(videoData.duration * 1000 || 60000, 300000); // Max 5 minutes
-      console.log(`🎬 Starting recording for ${maxDuration/1000} seconds...`);
-      
-      mediaRecorder.start(1000); // Collect data every second
-      
-      // Stop recording after the video duration or max time
-      setTimeout(() => {
-        if (mediaRecorder.state === 'recording') {
-          console.log("⏰ Recording timeout, stopping...");
-          mediaRecorder.stop();
-        }
-      }, maxDuration);
-      
-    } catch (error) {
-      console.error("❌ Failed to start recording:", error);
-      stream.getTracks().forEach(track => track.stop());
-      reject(new Error(`Failed to start recording: ${error.message}`));
-    }
-  });
-}
-
-/* =================================================================
                     WHISPER API INTEGRATION
    ================================================================= */
 
@@ -1698,93 +1476,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log("Background script received message:", message.type);
   
   if (message.type === 'START_TAB_CAPTURE') {
-    console.log("=== TAB CAPTURE REQUEST RECEIVED ===");
-    console.log("🎵 Starting Tab Capture for audio extraction...");
+    console.log("=== TAB CAPTURE STREAM ID REQUEST ===");
     console.log("Request from tab:", sender.tab?.id);
-    console.log("Video data:", message.videoData);
-    console.log("====================================");
-    
-    // Check if tabCapture API is available with detailed debugging
-    console.log("🔍 Checking chrome.tabCapture availability...");
-    console.log("chrome.tabCapture exists:", !!chrome.tabCapture);
-    
-    if (chrome.tabCapture) {
-      console.log("chrome.tabCapture properties:", Object.getOwnPropertyNames(chrome.tabCapture));
-      console.log("chrome.tabCapture.capture exists:", !!chrome.tabCapture.capture);
-    }
-    
-    if (!chrome.tabCapture) {
-      console.error("❌ chrome.tabCapture API not available - check permissions in manifest");
-      sendResponse({ 
-        success: false, 
-        error: "tabCapture API not available - missing permission in manifest.json?" 
+
+    if (!chrome.tabCapture || !chrome.tabCapture.getMediaStreamId) {
+      console.error("❌ tabCapture.getMediaStreamId not available");
+      sendResponse({
+        success: false,
+        error: "tabCapture.getMediaStreamId not available"
       });
       return;
     }
-    
-    if (!chrome.tabCapture.capture) {
-      console.error("❌ chrome.tabCapture.capture function not available - Manifest V3 issue?");
-      console.error("Available methods:", Object.getOwnPropertyNames(chrome.tabCapture));
-      sendResponse({ 
-        success: false, 
-        error: "tabCapture.capture function not available - possible Manifest V3 compatibility issue" 
-      });
-      return;
-    }
-    
-    // Use Tab Capture API to get system audio
-    console.log("📹 Calling chrome.tabCapture.capture...");
-    try {
-      chrome.tabCapture.capture({
-        audio: true,
-        video: false
-      }, (stream) => {
-      if (chrome.runtime.lastError) {
-        console.error("Tab Capture failed:", chrome.runtime.lastError.message);
-        sendResponse({ 
-          success: false, 
-          error: chrome.runtime.lastError.message 
-        });
+
+    chrome.tabCapture.getMediaStreamId({ targetTabId: sender.tab.id }, (streamId) => {
+      if (chrome.runtime.lastError || !streamId) {
+        const err = chrome.runtime.lastError?.message || 'Failed to get stream ID';
+        console.error("Failed to get stream ID:", err);
+        sendResponse({ success: false, error: err });
         return;
       }
-      
-      if (!stream) {
-        console.error("No stream received from Tab Capture");
-        sendResponse({ 
-          success: false, 
-          error: "No audio stream available" 
-        });
-        return;
-      }
-      
-      console.log("✅ Tab Capture successful, processing audio...");
-      
-      // Process the audio stream directly in background script
-      processTabAudioStream(stream, message.videoData, sender.tab.id)
-        .then(() => {
-          console.log("Audio processing initiated");
-          sendResponse({ success: true });
-        })
-        .catch(error => {
-          console.error("Audio processing failed:", error);
-          sendResponse({ 
-            success: false, 
-            error: error.message 
-          });
-        });
-      });
-      
-    } catch (tabCaptureError) {
-      console.error("❌ Exception calling chrome.tabCapture.capture:", tabCaptureError.name, tabCaptureError.message);
-      sendResponse({ 
-        success: false, 
-        error: `Tab Capture exception: ${tabCaptureError.message}` 
-      });
-      return;
-    }
-    
-    return true; // Keep message channel open for async response
-    
+      console.log("✅ Obtained stream ID");
+      sendResponse({ success: true, streamId });
+    });
+
+    return true;
+
   } else if (message.type === 'VIDEO_CONTENT') {
     console.log("Received video content from tab:", sender.tab.id);
     console.log('Video platform:', message.data.platform);
