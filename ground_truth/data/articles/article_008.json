@@ -1,0 +1,72 @@
+{
+  "article_id": "article_008",
+  "url": "https://correctiv.org/faktencheck/2025/05/27/messerangriff-in-hamburg-nein-die-verdaechtige-ist-keine-zugewanderte-palaestinenserin/",
+  "title": "Messerangriff in Hamburg: Verdächtige in Niedersachsen geboren",
+  "content": "Die Frau, die mutmaßlich am Hamburger Hauptbahnhof auf Passanten einstach, soll angeblich eine 2016 zugewanderte Palästinenserin sein – das wird in Beiträgen auf X und Facebook behauptet. Doch das stimmt nicht. Laut Angaben des zuständigen Innenministeriums wurde sie in Niedersachsen geboren.\n\nvon Steffen Kutzner\n27. Mai 2025\ntielbild-palästina-hamburg-messerangriff-niedersachsen\nDie Messerangreiferin von Hamburg soll eine eingewanderte Palästinenserin sein, wird online behauptet. Es gibt jedoch keinerlei Hinweise darauf. (Foto: ABBfoto / Picture Alliance)\nBehauptung\nDie Frau, die am 23. Mai 2025 mehrere Personen im Hamburger Hauptbahnhof mit einem Messer verletzte, sei eine 2016 eingewanderte Palästinenserin.\nAufgestellt von: Beiträgen auf X und Facebook\nDatum: 24.05.2025\nBewertung\nFalsch\nÜber diese Bewertung\nFalsch. Die Verdächtige wurde laut zuständigem Innenministerium und der Staatsanwaltschaft Hamburg in Niedersachsen geboren.\n\nBei einem Messerangriff im Hamburger Hauptbahnhof am Abend des 23. Mai 2025 wurden insgesamt 18 Personen verletzt. Eine Frau hatte am Freitagabend mit einem Messer willkürlich auf Passantinnen und Passanten eingestochen, die an Gleis 13/14 auf einen Zug warteten – sie wurde festgenommen. Daraufhin verbreiteten sich in Sozialen Netzwerken Falschmeldungen, unter anderem zu ihrer Herkunft.\n\nEinen Tag nach dem Angriff hieß es auf X und Facebook, die Angreiferin sei Palästinenserin. Die Beiträge haben mehrere hunderttausend Aufrufe. In den Kommentarspalten auf X nannten manche zudem einen vollen Namen und behaupten, die Frau sei eine \"turbo eingedeutschte Palästinenserin\" oder eine 2016 nach Deutschland eingewanderte Transfrau aus Palästina.\n\nErste Informationen über die Herkunft der Tatverdächtigen wurden am Samstagnachmittag bekannt – dafür, dass sie aus Palästina stamme, gab es keinerlei Belege. Die Bild hatte gegen 16 Uhr berichtet, dass die 39-jährige Tatverdächtige \"offenbar\" gebürtig aus Braunschweig in Niedersachsen stamme. Doch auch danach noch verbreitete sich der Screenshot mit der Behauptung, die Frau sei aus Palästina.\nPolizei Hamburg: Tatverdächtige hat \"keinen Bezug nach Palästina\"\n\nDie Polizei Hamburg stellte aufgrund der kursierenden Falschbehauptungen am 26. Mai auf X klar: \"Nach aktuellem Stand der Ermittlungen hat die Tatverdächtige keinen Bezug nach Palästina.\" Auf Nachfrage bestätigte die Staatsanwaltschaft Hamburg uns gegenüber am 27. Mai, dass die Verdächtige in Niedersachsen geboren wurde und es bisher keine Hinweise auf einen Migrationshintergrund gebe.\n\nLaut NDR-Informationen war die Frau einen Tag vor dem Vorfall in Hamburg aus einer geschlossenen Psychiatrie in Bremerhaven entlassen worden. Unter Berufung auf das niedersächsische Innenministerium heißt es, dass sie Anzeichen einer psychischen Erkrankung zeige und seit 2021 immer wieder polizeilich aufgefallen sei.\n\nDass sich nach Gewaltverbrechen wie dem in Hamburg Falschbehauptungen in Sozialen Netzwerken verbreiten, kommt häufiger vor: In solchen Situationen kursieren immer wieder falsche Behauptungen über Tatverdächtige oder andere Personen, die im Fokus der Berichterstattung stehen. Oft wird deren Nationalität thematisiert und für rassistische Narrative instrumentalisiert, wie zum Beispiel unsere Faktenchecks nach dem Attentat in Halle an der Saale im Jahr 2019 oder nach dem Anschlag in Solingen im Jahr 2024 zeigten.\n\nIm Fall von Hamburg kursieren nicht nur Falschbehauptungen über die Nationalität der Frau im Netz. Manche User zweifeln auch die Echtheit von Medienberichten an. So wurden über den Syrer, der die Frau gestoppt hat, ebenfalls irreführende Informationen im Netz verbreitet.\n\nRedigatur: Paulina Thom, Sarah Thust",
+  "date_added": "2025-06-07",
+  "labeler": "ground_truth_validator",
+  "overall_assessment": {
+    "reliability": "TRUE",
+    "confidence": "HIGH",
+    "rationale": "This is a fact-check article from CORRECTIV, a reputable German fact-checking organization. The article debunks false claims about the Hamburg knife attacker's nationality with official sources including police statements and prosecutor confirmation. The fact-check methodology is transparent and evidence-based."
+  },
+  "claims": [
+    {
+      "claim_id": "claim_008_001",
+      "text": "Die Frau, die am 23. Mai 2025 mehrere Personen im Hamburger Hauptbahnhof mit einem Messer verletzte, sei eine 2016 eingewanderte Palästinenserin",
+      "label": "false",
+      "evidence_sources": [
+        "https://correctiv.org/faktencheck/2025/05/27/messerangriff-in-hamburg-nein-die-verdaechtige-ist-keine-zugewanderte-palaestinenserin/",
+        "Hamburg Police X/Twitter statement",
+        "Hamburg Prosecutor's Office confirmation",
+        "Lower Saxony Interior Ministry"
+      ],
+      "confidence": "high",
+      "notes": "Multiple official sources confirm the suspect was born in Lower Saxony (Niedersachsen), Germany, not Palestine. Hamburg Police explicitly stated 'Nach aktuellem Stand der Ermittlungen hat die Tatverdächtige keinen Bezug nach Palästina.'"
+    },
+    {
+      "claim_id": "claim_008_002", 
+      "text": "Die Verdächtige wurde in Niedersachsen geboren",
+      "label": "true",
+      "evidence_sources": [
+        "Hamburg Prosecutor's Office confirmation to CORRECTIV",
+        "Lower Saxony Interior Ministry",
+        "Bild newspaper report"
+      ],
+      "confidence": "high",
+      "notes": "Confirmed by Hamburg Prosecutor's Office on May 27, 2025, stating the suspect was born in Lower Saxony with no evidence of migration background."
+    },
+    {
+      "claim_id": "claim_008_003",
+      "text": "Bei einem Messerangriff im Hamburger Hauptbahnhof am Abend des 23. Mai 2025 wurden insgesamt 18 Personen verletzt",
+      "label": "true", 
+      "evidence_sources": [
+        "CORRECTIV fact-check report",
+        "Media reports on Hamburg knife attack"
+      ],
+      "confidence": "high",
+      "notes": "Factual reporting of the incident details"
+    },
+    {
+      "claim_id": "claim_008_004",
+      "text": "Die Frau war einen Tag vor dem Vorfall aus einer geschlossenen Psychiatrie in Bremerhaven entlassen worden",
+      "label": "true",
+      "evidence_sources": [
+        "NDR information",
+        "Lower Saxony Interior Ministry"
+      ],
+      "confidence": "medium",
+      "notes": "Reported by NDR citing official sources, indicates mental health context for the incident"
+    }
+  ],
+  "metadata": {
+    "domain": "politics",
+    "source_type": "fact_check",
+    "word_count": 892,
+    "complexity": "moderate",
+    "language": "de",
+    "fact_check_organization": "CORRECTIV",
+    "original_claim_platforms": ["X/Twitter", "Facebook"],
+    "geographic_focus": "Germany"
+  }
+}

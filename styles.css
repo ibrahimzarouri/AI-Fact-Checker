@@ -1,0 +1,1123 @@
+/* AI Fact Checker Extension Styles */
+
+@keyframes ai-pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes ai-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes ai-glow {
+  0%, 100% { box-shadow: 0 2px 10px rgba(66, 133, 244, 0.3); }
+  50% { box-shadow: 0 2px 20px rgba(66, 133, 244, 0.6); }
+}
+
+/* ClaimBuster Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes expandIn {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: scaleY(0);
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+    transform: scaleY(1);
+  }
+}
+
+/* Floating indicator button */
+#ai-fact-checker-indicator {
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  z-index: 2147483647 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  padding: 10px 15px !important;
+  border-radius: 25px !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+#ai-fact-checker-indicator:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2) !important;
+}
+
+#ai-fact-checker-indicator.analyzing {
+  animation: ai-pulse 2s infinite !important;
+}
+
+/* Results panel */
+#ai-fact-checker-results-panel {
+  position: fixed !important;
+  bottom: 80px !important;
+  right: 20px !important;
+  width: 450px !important;
+  max-width: 90vw !important;
+  max-height: 80vh !important;
+  background: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  z-index: 2147483647 !important;  /* Changed from 2147483646 to 2147483647 */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  overflow: hidden !important;
+  backdrop-filter: blur(20px) !important;
+  /* ADD THESE NEW PROPERTIES: */
+  isolation: isolate !important;
+  transform: translateZ(0) !important;
+  will-change: transform !important;
+}
+
+/* Panel header */
+.ai-panel-header {
+  background: linear-gradient(135deg, #4285f4 0%, #34a853 100%) !important;
+  color: white !important;
+  padding: 16px 20px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+.ai-panel-title {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+}
+
+.ai-close-btn {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border: none !important;
+  color: white !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  font-size: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: background-color 0.2s !important;
+}
+
+.ai-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Panel content */
+.ai-panel-content {
+  padding: 0 !important;
+  overflow-y: auto !important;
+  max-height: calc(80vh - 60px) !important;
+  /* This is the main scrollbar for the entire panel */
+}
+
+/* Main verdict display */
+.ai-verdict-main {
+  padding: 20px !important;
+  border-bottom: 1px solid #e8eaed !important;
+}
+
+.ai-verdict-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin-bottom: 12px !important;
+}
+
+.ai-verdict-icon {
+  font-size: 32px !important;
+  line-height: 1 !important;
+}
+
+.ai-verdict-info {
+  flex: 1 !important;
+}
+
+.ai-verdict-title {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+  color: #1a1a1a !important;
+}
+
+.ai-confidence {
+  font-size: 12px !important;
+  color: #5f6368 !important;
+  font-weight: 500 !important;
+  margin-top: 2px !important;
+}
+
+.ai-verdict-summary {
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  color: #3c4043 !important;
+  margin: 0 !important;
+}
+
+/* ClaimBuster Toggle Switch */
+.ai-toggle-switch {
+  position: relative !important;
+  display: inline-block !important;
+  width: 50px !important;
+  height: 24px !important;
+}
+
+.ai-toggle-switch input {
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.ai-toggle-slider {
+  position: absolute !important;
+  cursor: pointer !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background-color: #ccc !important;
+  transition: 0.3s !important;
+  border-radius: 24px !important;
+}
+
+.ai-toggle-slider:before {
+  position: absolute !important;
+  content: "" !important;
+  height: 18px !important;
+  width: 18px !important;
+  left: 3px !important;
+  bottom: 3px !important;
+  background-color: white !important;
+  transition: 0.3s !important;
+  border-radius: 50% !important;
+}
+
+input:checked + .ai-toggle-slider {
+  background-color: #4285f4 !important;
+}
+
+input:focus + .ai-toggle-slider {
+  box-shadow: 0 0 1px #4285f4 !important;
+}
+
+input:checked + .ai-toggle-slider:before {
+  transform: translateX(26px) !important;
+}
+
+input:disabled + .ai-toggle-slider {
+  background-color: #e0e0e0 !important;
+  cursor: not-allowed !important;
+}
+
+input:disabled + .ai-toggle-slider:before {
+  background-color: #f5f5f5 !important;
+}
+
+.ai-toggle-switch.disabled {
+  opacity: 0.5 !important;
+  pointer-events: none !important;
+}
+
+/* UPDATED: ClaimBuster Toggle Section - Simplified Design */
+.ai-claimbuster-toggle-section {
+  margin: 0 0 0 0 !important;
+  padding: 15px 20px !important;
+  border: none !important; /* Removed border */
+  background: transparent !important; /* Removed background */
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+}
+
+/* NEW: Hover effect for ClaimBuster toggle section */
+.ai-claimbuster-toggle-section:hover {
+  background: rgba(66, 133, 244, 0.05) !important; /* Subtle hover background */
+  border-radius: 8px !important;
+}
+
+/* UPDATED: ClaimBuster Results Container - Removed borders and background */
+#claimbuster-results {
+  margin: 10px 20px 15px 20px !important;
+  animation: slideIn 0.3s ease-out !important;
+  border-radius: 8px !important;
+  background: transparent !important; /* Removed background */
+  border: none !important; /* Removed border */
+  padding: 0 !important; /* Removed padding */
+}
+
+/* Expand Button Styles */
+.ai-expand-btn {
+  transition: all 0.2s ease !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.ai-expand-btn:hover {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
+  transform: translateY(-1px) !important;
+}
+
+.ai-expand-btn:active {
+  transform: translateY(0) !important;
+}
+
+.ai-expand-btn:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.3) !important;
+}
+
+/* Detailed Claims Animation */
+#detailed-claims {
+  animation: expandIn 0.3s ease-out !important;
+  transform-origin: top !important;
+}
+
+/* ClaimBuster Verdict Boxes */
+.ai-claimbuster-verdict {
+  border-radius: 8px !important;
+  margin-bottom: 15px !important;
+  transition: all 0.2s ease !important;
+}
+
+.ai-claimbuster-verdict:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+}
+
+/* ClaimBuster Claims Styling */
+.ai-claimbuster-claim {
+  border-radius: 6px !important;
+  margin: 8px 0 !important;
+  transition: all 0.2s ease !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+.ai-claimbuster-claim:hover {
+  transform: translateX(2px) !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08) !important;
+}
+
+/* Priority Indicators */
+.ai-priority-high {
+  background-color: #fde7e7 !important;
+  border-left: 4px solid #ea4335 !important;
+}
+
+.ai-priority-medium {
+  background-color: #fff8e6 !important;
+  border-left: 4px solid #fbbc05 !important;
+}
+
+.ai-priority-low {
+  background-color: #e7f8ed !important;
+  border-left: 4px solid #34a853 !important;
+}
+
+/* UPDATED: ClaimBuster Stats - Hidden by default */
+.ai-claimbuster-stats {
+  display: none !important; /* Hidden by default */
+  justify-content: space-between !important;
+  align-items: center !important;
+  background: white !important;
+  padding: 12px !important;
+  border-radius: 6px !important;
+  margin: 10px 0 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+}
+
+/* NEW: Show stats when expanded */
+.ai-claimbuster-stats.expanded {
+  display: flex !important;
+}
+
+.ai-claimbuster-stat {
+  text-align: center !important;
+  flex: 1 !important;
+}
+
+.ai-claimbuster-stat-value {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  margin-bottom: 2px !important;
+}
+
+.ai-claimbuster-stat-label {
+  font-size: 11px !important;
+  color: #666 !important;
+  text-transform: uppercase !important;
+  font-weight: 500 !important;
+}
+
+/* ClaimBuster Mini Window */
+.ai-claimbuster-mini-window {
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  width: 300px !important;
+  max-height: 400px !important;
+  background: white !important;
+  border: 1px solid #ddd !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+  z-index: 2147483646 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 12px !important;
+  opacity: 0 !important;
+  transition: opacity 0.2s ease-in-out !important;
+  display: none !important;
+}
+
+/* Tab navigation */
+.ai-tabs-nav {
+  display: flex !important;
+  background: #f8f9fa !important;
+  border-bottom: 1px solid #e8eaed !important;
+  overflow-x: auto !important;
+}
+
+.ai-tab-btn {
+  flex: 1 !important;
+  min-width: 85px !important;
+  padding: 12px 6px !important;
+  border: none !important;
+  background: transparent !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  color: #5f6368 !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  white-space: nowrap !important;
+  border-bottom: 2px solid transparent !important;
+  text-overflow: ellipsis !important;
+  overflow: hidden !important;
+}
+
+.ai-tab-btn:hover {
+  background: rgba(66, 133, 244, 0.08) !important;
+  color: #4285f4 !important;
+}
+
+.ai-tab-btn.active {
+  color: #4285f4 !important;
+  border-bottom-color: #4285f4 !important;
+  background: rgba(66, 133, 244, 0.04) !important;
+}
+
+/* Tab content */
+.ai-tabs-content {
+  padding: 20px !important;
+  min-height: 200px !important;
+  /* Removed max-height and overflow-y to prevent inner scrolling */
+}
+
+.ai-tab-content {
+  display: none !important;
+}
+
+.ai-tab-content.active {
+  display: block !important;
+}
+
+/* Sections within tabs */
+.ai-section {
+  margin-bottom: 20px !important;
+}
+
+.ai-section:last-child {
+  margin-bottom: 0 !important;
+}
+
+.ai-section h4 {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  margin: 0 0 8px 0 !important;
+  color: #333 !important;
+}
+
+.ai-section p {
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+  color: #5f6368 !important;
+  margin: 0 !important;
+}
+
+.ai-section ul {
+  margin: 0 0 0 1.25rem !important;   /* indent the list */
+  padding: 0 !important;
+}
+
+.ai-section ul li {
+  color: #333333 !important;          /* darker grey for better contrast */
+  font-size: 13px !important;         /* match your paragraph text size */
+  line-height: 1.6 !important;        /* more breathing room */
+  margin-bottom: 0.25rem !important;  /* space between items */
+}
+
+/* Stats grid */
+.ai-stats-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+  margin-bottom: 16px !important;
+}
+
+.ai-stat-box {
+  background: #f8f9fa !important;
+  padding: 16px !important;
+  border-radius: 8px !important;
+  text-align: center !important;
+  transition: all 0.2s ease !important;
+}
+
+.ai-stat-box.clickable-stat {
+  cursor: pointer !important;
+  border: 2px solid transparent !important;
+}
+
+.ai-stat-box.clickable-stat:hover {
+  background: #e3f2fd !important;
+  border-color: #2196f3 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+}
+
+.ai-stat-hint {
+  font-size: 10px !important;
+  color: #2196f3 !important;
+  margin-top: 4px !important;
+  opacity: 0.8 !important;
+}
+
+.ai-stat-number {
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  color: #4285f4 !important;
+  margin-bottom: 4px !important;
+}
+
+.ai-stat-label {
+  font-size: 11px !important;
+  color: #5f6368 !important;
+  font-weight: 500 !important;
+}
+
+/* Level indicators */
+.ai-level-indicator {
+  display: inline-block !important;
+  padding: 4px 12px !important;
+  border-radius: 12px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+}
+
+.ai-level-indicator.low {
+  background: #e8f5e8 !important;
+  color: #34a853 !important;
+}
+
+.ai-level-indicator.medium {
+  background: #fff8e1 !important;
+  color: #ff8f00 !important;
+}
+
+.ai-level-indicator.high {
+  background: #fde7e7 !important;
+  color: #ea4335 !important;
+}
+
+/* Tags */
+.ai-tags {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+
+.ai-tag {
+  display: inline-block !important;
+  padding: 4px 8px !important;
+  background: #e8f0fe !important;
+  color: #1a73e8 !important;
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+}
+
+.ai-tag.warning {
+  background: #fde7e7 !important;
+  color: #d93025 !important;
+}
+
+/* Claim cards - Updated for Key Moments usage */
+.ai-claim-card {
+  background: #f8f9fa !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+  margin-bottom: 12px !important;
+  border-left: 3px solid #4285f4 !important;
+}
+
+.ai-claim-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 8px !important;
+}
+
+.ai-claim-verdict {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  padding: 3px 8px !important;
+  border-radius: 4px !important;
+  letter-spacing: 0.5px !important;
+}
+
+.ai-claim-text {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #333 !important;
+  margin-bottom: 6px !important;
+  line-height: 1.3 !important;
+}
+
+.ai-claim-explanation {
+  font-size: 12px !important;
+  color: #5f6368 !important;
+  line-height: 1.4 !important;
+  margin-bottom: 6px !important;
+}
+
+.ai-claim-context {
+  font-size: 11px !important;
+  color: #ea4335 !important;
+  background: #fde7e7 !important;
+  padding: 6px 8px !important;
+  border-radius: 4px !important;
+  margin-top: 6px !important;
+}
+
+/* Red flags section */
+.ai-red-flags {
+  background: #fef7e0 !important;
+  border: 1px solid #f9c74f !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+}
+
+.ai-red-flags ul {
+  margin: 0 !important;
+  padding-left: 16px !important;
+  list-style: none !important;
+}
+
+.ai-red-flags li {
+  font-size: 12px !important;
+  color: #d93025 !important;
+  margin-bottom: 4px !important;
+  position: relative !important;
+}
+
+.ai-red-flags li::before {
+  content: '⚠️' !important;
+  position: absolute !important;
+  left: -16px !important;
+}
+
+/* Loading state */
+.ai-loading {
+  text-align: center !important;
+  padding: 40px 20px !important;
+}
+
+.ai-loading-spinner {
+  width: 32px !important;
+  height: 32px !important;
+  border: 3px solid #f0f0f0 !important;
+  border-top: 3px solid #4285f4 !important;
+  border-radius: 50% !important;
+  animation: ai-spin 1s linear infinite !important;
+  margin: 0 auto 16px auto !important;
+}
+
+.ai-loading-text {
+  font-size: 14px !important;
+  color: #5f6368 !important;
+  margin: 0 !important;
+}
+
+/* Action buttons */
+.ai-action-buttons {
+  margin: 0 20px 20px 20px !important;
+  padding-top: 0 !important;
+  border-top: 1px solid #e8eaed !important;
+  display: flex !important;
+  gap: 10px !important;
+}
+
+.ai-btn {
+  flex: 1 !important;
+  padding: 10px 16px !important;
+  border: none !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+}
+
+.ai-btn-primary {
+  background: #4285f4 !important;
+  color: white !important;
+}
+
+.ai-btn-primary:hover {
+  background: #3367d6 !important;
+}
+
+.ai-btn-secondary {
+  background: #f8f9fa !important;
+  color: #3c4043 !important;
+  border: 1px solid #dadce0 !important;
+}
+
+.ai-btn-secondary:hover {
+  background: #f1f3f4 !important;
+}
+
+
+/* Footer */
+.ai-footer {
+  margin: 0 20px 20px 20px !important;
+  padding-top: 12px !important;
+  border-top: 1px solid #e8eaed !important;
+  text-align: center !important;
+  font-size: 11px !important;
+  color: #9aa0a6 !important;
+}
+
+/* Verdict banner styles for different types */
+.ai-verdict-main.reliable {
+  background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%) !important;
+  border-left: 4px solid #34a853 !important;
+}
+
+.ai-verdict-main.questionable {
+  background: linear-gradient(135deg, #fff8e1 0%, #fffbee 100%) !important;
+  border-left: 4px solid #fbbc05 !important;
+}
+
+.ai-verdict-main.misleading {
+  background: linear-gradient(135deg, #fff3e0 0%, #fdf4e3 100%) !important;
+  border-left: 4px solid #ff6d01 !important;
+}
+
+.ai-verdict-main.false {
+  background: linear-gradient(135deg, #fde7e7 0%, #fef1f1 100%) !important;
+  border-left: 4px solid #ea4335 !important;
+}
+
+/* Notification */
+.ai-notification {
+  background: white !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  padding: 16px !important;
+  margin-bottom: 10px !important;
+  border-left: 4px solid #4285f4 !important;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  #ai-fact-checker-results-panel {
+    width: calc(100vw - 40px) !important;
+    right: 20px !important;
+    left: 20px !important;
+  }
+  #ai-fact-checker-indicator {
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  z-index: 2147483647 !important;
+  isolation: isolate !important;
+  transform: translateZ(0) !important;
+  will-change: transform !important;
+}
+  
+  .ai-tabs-nav {
+    overflow-x: scroll !important;
+  }
+  
+  .ai-tab-btn {
+    min-width: 75px !important;
+    font-size: 9px !important;
+    padding: 10px 4px !important;
+  }
+  
+  /* Enhanced responsive styles for video tabs */
+  .ai-video-metadata {
+    padding: 10px !important;
+    margin-bottom: 12px !important;
+  }
+  
+  .ai-transcript-container {
+    max-height: 250px !important;
+  }
+  
+  .ai-moment-item {
+    padding: 12px !important;
+  }
+  
+  .ai-jump-btn {
+    font-size: 11px !important;
+    padding: 6px 10px !important;
+  }
+  
+  .ai-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* ClaimBuster responsive styles */
+  .ai-claimbuster-stats {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  
+  .ai-claimbuster-stat {
+    flex: none !important;
+  }
+  
+  .ai-expand-btn {
+    width: 28px !important;
+    height: 28px !important;
+  }
+  
+  #claimbuster-results {
+    margin: 0 10px 15px 10px !important;
+    padding: 0 !important;
+  }
+  
+  .ai-claimbuster-toggle-section {
+    margin: 0 10px 15px 10px !important;
+  }
+
+
+/* ==================================================
+                   MULTIMEDIA SECTION
+   ================================================= */
+
+/* Video Platform Indicators */
+.ai-platform-indicator {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 4px 8px !important;
+  background: rgba(66, 133, 244, 0.1) !important;
+  border: 1px solid rgba(66, 133, 244, 0.2) !important;
+  border-radius: 12px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: #4285f4 !important;
+  margin: 8px 0 !important;
+}
+
+.ai-platform-indicator.youtube {
+  background: rgba(255, 0, 0, 0.1) !important;
+  border-color: rgba(255, 0, 0, 0.2) !important;
+  color: #ff0000 !important;
+}
+
+.ai-platform-indicator.tiktok {
+  background: rgba(0, 0, 0, 0.1) !important;
+  border-color: rgba(0, 0, 0, 0.2) !important;
+  color: #000000 !important;
+}
+
+/* Video Metadata Display */
+.ai-video-metadata {
+  background: #f8f9fa !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+  margin-bottom: 15px !important;
+  border-left: 4px solid #4285f4 !important;
+}
+
+.ai-video-metadata .ai-metadata-item {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 6px !important;
+  font-size: 13px !important;
+}
+
+.ai-video-metadata .ai-metadata-item:last-child {
+  margin-bottom: 0 !important;
+}
+
+.ai-video-metadata .ai-metadata-label {
+  font-weight: 500 !important;
+  color: #5f6368 !important;
+}
+
+.ai-video-metadata .ai-metadata-value {
+  color: #333 !important;
+  text-align: right !important;
+  max-width: 60% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Transcript Display */
+.ai-transcript-container {
+  background: #f8f9fa !important;
+  border: 1px solid #e8eaed !important;
+  border-radius: 8px !important;
+  max-height: 400px !important;
+  overflow-y: auto !important;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+}
+
+.ai-transcript-header {
+  background: #e8eaed !important;
+  padding: 8px 12px !important;
+  border-bottom: 1px solid #dadce0 !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  color: #5f6368 !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1 !important;
+}
+
+.ai-transcript-content {
+  padding: 15px !important;
+}
+
+.ai-transcript-segment {
+  margin-bottom: 12px !important;
+  padding-left: 60px !important;
+  position: relative !important;
+}
+
+.ai-transcript-timestamp {
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 55px !important;
+  font-size: 11px !important;
+  color: #666 !important;
+  font-weight: 500 !important;
+  text-align: right !important;
+  padding-right: 5px !important;
+}
+
+.ai-transcript-text {
+  color: #333 !important;
+  line-height: 1.5 !important;
+}
+
+/* Quality Indicators */
+.ai-quality-indicator {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 2px 8px !important;
+  border-radius: 10px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  text-transform: uppercase !important;
+}
+
+.ai-quality-indicator.high {
+  background: rgba(52, 168, 83, 0.1) !important;
+  color: #34a853 !important;
+}
+
+.ai-quality-indicator.medium {
+  background: rgba(251, 188, 5, 0.1) !important;
+  color: #fbbc05 !important;
+}
+
+.ai-quality-indicator.low {
+  background: rgba(234, 67, 53, 0.1) !important;
+  color: #ea4335 !important;
+}
+
+/* Key Moments */
+.ai-key-moments-container {
+  margin-top: 15px !important;
+}
+
+.ai-moment-item {
+  background: white !important;
+  border: 2px solid #e8eaed !important;
+  border-radius: 8px !important;
+  padding: 15px !important;
+  margin-bottom: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+.ai-moment-item:hover {
+  border-color: #4285f4 !important;
+  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.1) !important;
+}
+
+.ai-moment-item.severity-high {
+  border-color: #ea4335 !important;
+  background: rgba(234, 67, 53, 0.02) !important;
+}
+
+.ai-moment-item.severity-medium {
+  border-color: #fbbc05 !important;
+  background: rgba(251, 188, 5, 0.02) !important;
+}
+
+.ai-moment-item.severity-low {
+  border-color: #34a853 !important;
+  background: rgba(52, 168, 83, 0.02) !important;
+}
+
+.ai-moment-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 8px !important;
+}
+
+.ai-moment-timestamp {
+  background: #f0f0f0 !important;
+  padding: 4px 8px !important;
+  border-radius: 12px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #666 !important;
+}
+
+.ai-moment-severity {
+  padding: 4px 8px !important;
+  border-radius: 12px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+}
+
+.ai-moment-description {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  color: #333 !important;
+  margin-bottom: 8px !important;
+}
+
+.ai-moment-reason {
+  font-size: 13px !important;
+  color: #666 !important;
+  margin-bottom: 12px !important;
+  font-style: italic !important;
+}
+
+/* Jump to Timestamp Button */
+.ai-jump-btn {
+  background: #4285f4 !important;
+  color: white !important;
+  border: none !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.ai-jump-btn:hover {
+  background: #3367d6 !important;
+  transform: translateY(-1px) !important;
+}
+
+.ai-jump-btn:active {
+  transform: translateY(0) !important;
+}
+
+/* Audio Extraction Status */
+.ai-audio-status {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  padding: 12px !important;
+  border-radius: 8px !important;
+  text-align: center !important;
+  margin-bottom: 15px !important;
+}
+
+.ai-audio-status.processing {
+  background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%) !important;
+  color: #333 !important;
+}
+
+.ai-audio-status.complete {
+  background: linear-gradient(135deg, #00b894 0%, #00cec9 100%) !important;
+}
+
+.ai-audio-status.error {
+  background: linear-gradient(135deg, #e17055 0%, #d63031 100%) !important;
+}
+
+/* Responsive Video Styles */
+@media (max-width: 600px) {
+  .ai-video-metadata .ai-metadata-item {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 2px !important;
+  }
+  
+  .ai-video-metadata .ai-metadata-value {
+    max-width: 100% !important;
+    text-align: left !important;
+  }
+  
+  .ai-transcript-segment {
+    padding-left: 0 !important;
+  }
+  
+  .ai-transcript-timestamp {
+    position: static !important;
+    display: inline-block !important;
+    background: #e8eaed !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    margin-right: 8px !important;
+    margin-bottom: 4px !important;
+  }
+  
+  .ai-moment-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+}
+}

@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real Article Evaluation Tool</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .article-input {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+        }
+        
+        .article-input.active {
+            border-color: #007bff;
+            background: #e3f2fd;
+        }
+        
+        .article-textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+            resize: vertical;
+        }
+        
+        .ground-truth-select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        
+        .api-key-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        
+        .evaluate-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 14px;
+        }
+        
+        .evaluate-btn:hover {
+            background: #218838;
+        }
+        
+        .evaluate-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .progress {
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #28a745;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .log {
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            display: none;
+        }
+        
+        .result-section {
+            background: #d4edda;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #28a745;
+            display: none;
+        }
+        
+        .result-code {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 11px;
+            white-space: pre-wrap;
+        }
+        
+        h1 { color: #333; text-align: center; }
+        h3 { color: #495057; margin-top: 0; }
+        
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #856404;
+        }
+        
+        .instructions {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Real Article Evaluation Tool</h1>
+        
+        <div class="instructions">
+            <h3>📋 Instructions:</h3>
+            <ol>
+                <li>Paste <strong>real article content</strong> from your JSON files below</li>
+                <li>Select the correct <strong>ground truth</strong> for each article</li>
+                <li>Enter your <strong>OpenAI API key</strong></li>
+                <li>Click <strong>"Evaluate All Articles"</strong></li>
+                <li>Get <strong>real calibration data</strong> based on actual content</li>
+            </ol>
+        </div>
+        
+        <div class="warning">
+            <strong>⚠️ Important:</strong> Make sure to paste REAL article content, not mock data!
+        </div>
+        
+        <label for="apiKey"><strong>OpenAI API Key:</strong></label>
+        <input type="password" id="apiKey" class="api-key-input" placeholder="" />
+        
+        <div id="articlesContainer">
+            <!-- Article inputs will be generated here -->
+        </div>
+        
+        <button onclick="generateArticleInputs()" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 6px; margin: 10px 0;">
+            📝 Generate 13 Article Inputs
+        </button>
+        
+        <button id="evaluateBtn" class="evaluate-btn" onclick="startRealEvaluation()" disabled>
+            🚀 Evaluate All Articles
+        </button>
+        
+        <div id="progress" class="progress">
+            <p><strong>Progress:</strong> <span id="progressText">0/13</span></p>
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+        </div>
+        
+        <div id="log" class="log"></div>
+        
+        <div id="resultSection" class="result-section">
+            <h3>✅ Real Evaluation Complete!</h3>
+            <p>Copy this content and save it as <code>ground_truth/evaluate.js</code>:</p>
+            <button onclick="copyResult()" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin: 10px 0;">
+                📋 Copy to Clipboard
+            </button>
+            <div id="resultCode" class="result-code"></div>
+        </div>
+    </div>
+
+    <script>
+        const CONFIG = {
+            OPENAI_API_URL: 'https://api.openai.com/v1/chat/completions'
+        };
+
+        let articles = [];
+        let evaluationResults = [];
+
+        function generateArticleInputs() {
+            const container = document.getElementById('articlesContainer');
+            container.innerHTML = '';
+            
+            for (let i = 1; i <= 13; i++) {
+                const articleNum = i.toString().padStart(3, '0');
+                const div = document.createElement('div');
+                div.className = 'article-input';
+                div.innerHTML = `
+                    <h3>📰 Article ${articleNum}</h3>
+                    <div style="margin: 10px 0;">
+                        <label><strong>Ground Truth:</strong></label>
+                        <select class="ground-truth-select" id="ground-truth-${articleNum}">
+                            <option value="RELIABLE">RELIABLE</option>
+                            <option value="QUESTIONABLE">QUESTIONABLE</option>
+                            <option value="MISLEADING">MISLEADING</option>
+                            <option value="FALSE">FALSE</option>
+                        </select>
+                    </div>
+                    <div style="margin: 10px 0;">
+                        <label><strong>Article Title:</strong></label>
+                        <input type="text" id="title-${articleNum}" placeholder="Article title..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin: 5px 0;">
+                    </div>
+                    <div style="margin: 10px 0;">
+                        <label><strong>Article Content:</strong></label>
+                        <textarea class="article-textarea" id="content-${articleNum}" placeholder="Paste the REAL article content here..."></textarea>
+                    </div>
+                `;
+                container.appendChild(div);
+            }
+            
+            document.getElementById('evaluateBtn').disabled = false;
+        }
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : '📝';
+            logDiv.innerHTML += `[${timestamp}] ${prefix} ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function updateProgress(current, total) {
+            const progressText = document.getElementById('progressText');
+            const progressFill = document.getElementById('progressFill');
+            
+            progressText.textContent = `${current}/${total}`;
+            progressFill.style.width = `${(current / total) * 100}%`;
+        }
+
+        async function startRealEvaluation() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            
+            if (!apiKey || !apiKey.startsWith('sk-')) {
+                alert('Please enter a valid OpenAI API key starting with "sk-"');
+                return;
+            }
+            
+            CONFIG.OPENAI_API_KEY = apiKey;
+            
+            // Collect articles
+            articles = [];
+            for (let i = 1; i <= 13; i++) {
+                const articleNum = i.toString().padStart(3, '0');
+                const title = document.getElementById(`title-${articleNum}`).value.trim();
+                const content = document.getElementById(`content-${articleNum}`).value.trim();
+                const groundTruth = document.getElementById(`ground-truth-${articleNum}`).value;
+                
+                if (!content) {
+                    alert(`Please provide content for Article ${articleNum}`);
+                    return;
+                }
+                
+                articles.push({
+                    id: articleNum,
+                    title: title || `Article ${articleNum}`,
+                    content: content,
+                    ground_truth: groundTruth
+                });
+            }
+            
+            // Start evaluation
+            document.getElementById('evaluateBtn').disabled = true;
+            document.getElementById('progress').style.display = 'block';
+            document.getElementById('log').style.display = 'block';
+            
+            log('Starting REAL evaluation with actual article content...');
+            evaluationResults = [];
+            
+            try {
+                await evaluateRealArticles();
+                showResults();
+            } catch (error) {
+                log(`Fatal error: ${error.message}`, 'error');
+                document.getElementById('evaluateBtn').disabled = false;
+            }
+        }
+
+        async function evaluateRealArticles() {
+            for (let i = 0; i < articles.length; i++) {
+                const article = articles[i];
+                log(`\n Evaluating article ${article.id} with REAL content...`);
+                updateProgress(i, 13);
+                
+                try {
+                    log(`Title: ${article.title}`);
+                    log(`Content length: ${article.content.length} characters`);
+                    log(`Ground Truth: ${article.ground_truth}`);
+                    
+                    // Get OpenAI analysis with REAL content
+                    const openaiResult = await analyzeWithOpenAI(article);
+                    
+                    // Store evaluation result
+                    const evaluation = {
+                        article_id: article.id,
+                        title: article.title,
+                        ground_truth: article.ground_truth,
+                        openai_verdict: openaiResult.verdict,
+                        openai_confidence: openaiResult.confidence,
+                        is_correct: compareVerdicts(article.ground_truth, openaiResult.verdict),
+                        confidence_bracket: getConfidenceBracket(openaiResult.confidence),
+                        evaluation_date: new Date().toISOString(),
+                        content_length: article.content.length
+                    };
+                    
+                    evaluationResults.push(evaluation);
+                    
+                    log(`OpenAI: ${openaiResult.verdict} (${openaiResult.confidence}% confident)`);
+                    log(`Correct: ${evaluation.is_correct ? 'YES' : 'NO'}`);
+                    
+                    // Wait 2 seconds between requests to avoid rate limiting
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                } catch (error) {
+                    log(`Error evaluating article ${article.id}: ${error.message}`, 'error');
+                    
+                    evaluationResults.push({
+                        article_id: article.id,
+                        title: article.title,
+                        ground_truth: article.ground_truth,
+                        openai_verdict: 'ERROR',
+                        openai_confidence: 0,
+                        is_correct: false,
+                        confidence_bracket: 'ERROR',
+                        evaluation_date: new Date().toISOString(),
+                        error: error.message
+                    });
+                }
+            }
+            
+            updateProgress(13, 13);
+            log('\n🎉 REAL EVALUATION COMPLETE!', 'success');
+        }
+
+        async function analyzeWithOpenAI(article) {
+            const prompt = `Analyze this news article for factual accuracy, bias, and reliability.
+
+Article Title: ${article.title}
+Article Content: ${article.content}
+
+Respond with ONLY a JSON object in this format:
+{
+  "overall_verdict": "RELIABLE|QUESTIONABLE|MISLEADING|FALSE",
+  "confidence_score": 85
+}`;
+
+            const response = await fetch(CONFIG.OPENAI_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${CONFIG.OPENAI_API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4.1-nano',
+                    messages: [
+                        {
+                            role: 'system',
+                            content: 'You are an expert fact-checker. Analyze the article carefully and respond only with valid JSON.'
+                        },
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ],
+                    max_tokens: 200,
+                    temperature: 0.2
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            const content = data.choices[0].message.content.trim();
+            
+            try {
+                let cleanedText = content;
+                cleanedText = cleanedText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+                
+                const jsonStart = cleanedText.indexOf('{');
+                const jsonEnd = cleanedText.lastIndexOf('}');
+                
+                if (jsonStart !== -1 && jsonEnd !== -1) {
+                    cleanedText = cleanedText.substring(jsonStart, jsonEnd + 1);
+                }
+                
+                const result = JSON.parse(cleanedText);
+                return {
+                    verdict: result.overall_verdict || 'QUESTIONABLE',
+                    confidence: result.confidence_score || 50
+                };
+            } catch (error) {
+                log(`⚠️ Failed to parse OpenAI response, using defaults: ${content}`);
+                return {
+                    verdict: 'QUESTIONABLE',
+                    confidence: 50
+                };
+            }
+        }
+
+        function compareVerdicts(groundTruth, openaiVerdict) {
+            const normalize = (verdict) => {
+                const map = {
+                    'RELIABLE': 'RELIABLE',
+                    'QUESTIONABLE': 'QUESTIONABLE', 
+                    'MISLEADING': 'MISLEADING',
+                    'FALSE': 'FALSE'
+                };
+                return map[verdict?.toUpperCase()] || 'QUESTIONABLE';
+            };
+            
+            return normalize(groundTruth) === normalize(openaiVerdict);
+        }
+
+        function getConfidenceBracket(confidence) {
+            if (confidence >= 90) return '90-100%';
+            if (confidence >= 80) return '80-90%';
+            if (confidence >= 70) return '70-80%';
+            if (confidence >= 60) return '60-70%';
+            return 'under-60%';
+        }
+
+        function showResults() {
+            const evaluateJsContent = generateEvaluateJs(evaluationResults);
+            
+            document.getElementById('resultCode').textContent = evaluateJsContent;
+            document.getElementById('resultSection').style.display = 'block';
+            
+            // Calculate summary
+            const total = evaluationResults.length;
+            const correct = evaluationResults.filter(r => r.is_correct).length;
+            const accuracy = Math.round((correct / total) * 100);
+            
+            log(`\n📊 REAL EVALUATION SUMMARY:`, 'success');
+            log(`Overall Accuracy: ${correct}/${total} = ${accuracy}%`, 'success');
+            
+            // Calculate by confidence brackets
+            const brackets = {};
+            evaluationResults.forEach(result => {
+                const bracket = result.confidence_bracket;
+                if (!brackets[bracket]) {
+                    brackets[bracket] = { correct: 0, total: 0 };
+                }
+                brackets[bracket].total++;
+                if (result.is_correct) {
+                    brackets[bracket].correct++;
+                }
+            });
+            
+            Object.keys(brackets).forEach(bracket => {
+                const data = brackets[bracket];
+                const accuracy = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
+                log(`${bracket}: ${data.correct}/${data.total} = ${accuracy}%`, 'success');
+            });
+        }
+
+        function generateEvaluateJs(results) {
+            return `// =============================================================================
+// REAL GROUND TRUTH EVALUATION RESULTS
+// Generated on: ${new Date().toISOString()}
+// Based on ACTUAL article content (not mock data)
+// =============================================================================
+
+const EVALUATION_RESULTS = ${JSON.stringify(results, null, 2)};
+
+// Calculate calibration statistics
+function calculateCalibration() {
+  const brackets = {
+    '90-100%': { correct: 0, total: 0 },
+    '80-90%': { correct: 0, total: 0 },
+    '70-80%': { correct: 0, total: 0 },
+    '60-70%': { correct: 0, total: 0 },
+    'under-60%': { correct: 0, total: 0 }
+  };
+  
+  EVALUATION_RESULTS.forEach(result => {
+    if (result.confidence_bracket && result.confidence_bracket !== 'ERROR') {
+      brackets[result.confidence_bracket].total++;
+      if (result.is_correct) {
+        brackets[result.confidence_bracket].correct++;
+      }
+    }
+  });
+  
+  // Calculate accuracy for each bracket
+  Object.keys(brackets).forEach(bracket => {
+    const data = brackets[bracket];
+    data.accuracy = data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0;
+  });
+  
+  return brackets;
+}
+
+// Export for use in content script
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { EVALUATION_RESULTS, calculateCalibration };
+}`;
+        }
+
+        function copyResult() {
+            const resultCode = document.getElementById('resultCode');
+            navigator.clipboard.writeText(resultCode.textContent).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                alert('Could not copy to clipboard. Please select and copy manually.');
+                console.error('Copy failed:', err);
+            });
+        }
+    </script>
+</body>
+</html>
