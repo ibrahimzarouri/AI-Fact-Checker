@@ -62,6 +62,17 @@ const CONFIG = {
   ]
 };
 
+// Escape page- or model-provided text before inserting it into innerHTML
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // Enhanced state tracking
 let latestResults = null;
 let isAnalyzing = false;
@@ -75,6 +86,7 @@ let autoAnalysisTriggered = false; // Prevent multiple auto-analysis triggers
 // Ground Truth System - ADD THESE LINES
 let groundTruthData = null;
 let confidenceCalibration = null;
+let evaluationResults = null;
 
 // Audio extraction state management
 let isExtractingAudio = false;
@@ -220,77 +232,6 @@ function calculateRealCalibration() {
   
   console.log("CORRECTED brackets:", brackets);
   return brackets;
-}
-
-// Function to calculate confidence calibration - ADD THIS FUNCTION
-function calculateConfidenceCalibrationReal(groundTruthArticles, currentResult) {
-  try {
-    // Load real evaluation results
-    const evaluationResults = EVALUATION_RESULTS; // From evaluate.js
-    
-    if (!evaluationResults || evaluationResults.length === 0) {
-      return {
-        available: false,
-        message: "Real evaluation data not available"
-      };
-    }
-    
-    const confidence = currentResult.analysis?.confidence_score || 0;
-    const currentBracket = getConfidenceBracket(confidence);
-    
-    // Calculate real accuracy for this confidence bracket
-    const bracketsData = calculateCalibration();
-    const bracketStats = bracketsData[currentBracket];
-    
-    if (!bracketStats || bracketStats.total === 0) {
-      return {
-        available: true,
-        confidence_bracket: currentBracket,
-        actual_accuracy: 0,
-        sample_size: evaluationResults.length,
-        bracket_sample_size: 0,
-        reliability_level: 'No Data',
-        reliability_color: '#666',
-        message: `No articles in our test set had AI confidence in the ${currentBracket} range.`
-      };
-    }
-    
-    const actualAccuracy = bracketStats.accuracy;
-    const bracketSampleSize = bracketStats.total;
-    
-    // Determine reliability level based on REAL accuracy
-    let reliabilityLevel = '';
-    let reliabilityColor = '';
-    
-    if (actualAccuracy >= 80) {
-      reliabilityLevel = 'High Reliability';
-      reliabilityColor = '#34a853';
-    } else if (actualAccuracy >= 65) {
-      reliabilityLevel = 'Medium Reliability'; 
-      reliabilityColor = '#fbbc05';
-    } else {
-      reliabilityLevel = 'Lower Reliability';
-      reliabilityColor = '#ea4335';
-    }
-    
-    return {
-      available: true,
-      confidence_bracket: currentBracket,
-      actual_accuracy: actualAccuracy,
-      sample_size: evaluationResults.length,
-      bracket_sample_size: bracketSampleSize,
-      reliability_level: reliabilityLevel,
-      reliability_color: reliabilityColor,
-      message: `Based on our testing with ${evaluationResults.length} verified articles, when this AI is ${currentBracket} confident, it was correct ${actualAccuracy}% of the time (${bracketStats.correct}/${bracketSampleSize} articles).`
-    };
-    
-  } catch (error) {
-    console.error("Error calculating real confidence calibration:", error);
-    return {
-      available: false,
-      message: "Could not calculate confidence calibration from real data"
-    };
-  }
 }
 
 // Function to load and display ground truth - ADD THIS FUNCTION
@@ -1103,7 +1044,7 @@ async function extractAudioFromVideo(platform) {
           })));
         }
         
-        const finalMimeType = mediaRecorder.mimeType || mimeType || 'audio/webm';
+        const finalMimeType = mediaRecorder.mimeType || supportedType || 'audio/webm';
         const blob = new Blob(audioChunks, { type: finalMimeType });
         
         console.log("=== FINAL BLOB ANALYSIS ===");
@@ -1162,7 +1103,7 @@ async function extractAudioFromVideo(platform) {
       success: true,
       audioBlob,
       duration: recordingDuration / 1000,
-      format: mimeType
+      format: audioBlob.type || supportedType || 'audio/webm'
     };
     
   } catch (error) {
@@ -1515,7 +1456,7 @@ function showLoadingState(message = 'Analyzing with AI...') {
     contentDiv.innerHTML = `
       <div class="ai-loading">
         <div class="ai-loading-spinner"></div>
-        <p class="ai-loading-text">${message}</p>
+        <p class="ai-loading-text">${escapeHtml(message)}</p>
       </div>
     `;
   }
@@ -1758,7 +1699,7 @@ function createClaimBusterMiniWindow(claimbusterResult) {
       const claimPriority = getClaimBusterPriority(claim.score);
       return `
         <div style="margin: 8px 0; padding: 8px; background: ${claimPriority.bgColor}; border-radius: 4px;">
-          <div style="font-size: 13px; line-height: 1.3; margin-bottom: 4px;">${claim.sentence.substring(0, 80)}${claim.sentence.length > 80 ? '...' : ''}</div>
+          <div style="font-size: 13px; line-height: 1.3; margin-bottom: 4px;">${escapeHtml(claim.sentence.substring(0, 80))}${claim.sentence.length > 80 ? '...' : ''}</div>
           <div style="font-size: 11px; color: ${claimPriority.color}; font-weight: 600;">${claimPriority.level}</div>
         </div>
       `;
@@ -1769,7 +1710,7 @@ function createClaimBusterMiniWindow(claimbusterResult) {
       const claimPriority = getClaimBusterPriority(result.score);
       return `
         <div style="margin: 8px 0; padding: 8px; background: ${claimPriority.bgColor}; border-radius: 4px;">
-          <div style="font-size: 13px; line-height: 1.3; margin-bottom: 4px;">${result.sentence.substring(0, 80)}${result.sentence.length > 80 ? '...' : ''}</div>
+          <div style="font-size: 13px; line-height: 1.3; margin-bottom: 4px;">${escapeHtml(result.sentence.substring(0, 80))}${result.sentence.length > 80 ? '...' : ''}</div>
           <div style="font-size: 11px; color: ${claimPriority.color}; font-weight: 600;">${claimPriority.level}</div>
         </div>
       `;
@@ -1831,61 +1772,18 @@ function showClaimBusterMiniWindow() {
     return;
   }
   
-  console.log("Showing ClaimBuster mini window with AGGRESSIVE STYLING");
-  
-  // AGGRESSIVE styling to make sure it's visible
   claimBusterMiniWindow.style.position = 'fixed';
-  claimBusterMiniWindow.style.top = '100px';  // Changed from bottom to top
+  claimBusterMiniWindow.style.top = '100px';
   claimBusterMiniWindow.style.right = '100px';
-  claimBusterMiniWindow.style.zIndex = '999999999'; // Even higher z-index
+  claimBusterMiniWindow.style.zIndex = '2147483647';
   claimBusterMiniWindow.style.display = 'block';
-  claimBusterMiniWindow.style.opacity = '1'; // Start with full opacity
+  claimBusterMiniWindow.style.opacity = '1';
   claimBusterMiniWindow.style.width = '300px';
   claimBusterMiniWindow.style.height = 'auto';
   claimBusterMiniWindow.style.minHeight = '100px';
-  
-  // Add VERY visible styling for debugging
-  claimBusterMiniWindow.style.border = '5px solid red';
-  claimBusterMiniWindow.style.backgroundColor = 'yellow';
-  claimBusterMiniWindow.style.color = 'black';
-  claimBusterMiniWindow.style.padding = '20px';
-  claimBusterMiniWindow.style.fontSize = '16px';
-  claimBusterMiniWindow.style.fontWeight = 'bold';
-  
-  // Add a test message
-  if (!claimBusterMiniWindow.querySelector('.test-message')) {
-    const testDiv = document.createElement('div');
-    testDiv.className = 'test-message';
-    testDiv.innerHTML = '🎯 ClaimBuster Mini Window - VISIBLE TEST';
-    testDiv.style.cssText = 'background: red; color: white; padding: 10px; margin: 10px 0; border: 2px solid black;';
-    claimBusterMiniWindow.insertBefore(testDiv, claimBusterMiniWindow.firstChild);
-  }
-  
-  // Log final position for debugging
-  console.log("ClaimBuster mini window positioned and styled");
-  
-  setTimeout(() => {
-    if (claimBusterMiniWindow) {
-      const rect = claimBusterMiniWindow.getBoundingClientRect();
-      console.log("Mini window position and size:", {
-        top: rect.top,
-        left: rect.left,
-        right: rect.right,
-        bottom: rect.bottom,
-        width: rect.width,
-        height: rect.height,
-        visible: rect.width > 0 && rect.height > 0,
-        inViewport: rect.top >= 0 && rect.left >= 0 && rect.bottom <= window.innerHeight && rect.right <= window.innerWidth
-      });
-      
-      console.log("Window viewport size:", {
-        width: window.innerWidth,
-        height: window.innerHeight
-      });
-      
-      console.log("ClaimBuster mini window should be VERY visible now with yellow background and red border!");
-    }
-  }, 100);
+  claimBusterMiniWindow.style.backgroundColor = 'white';
+  claimBusterMiniWindow.style.borderRadius = '8px';
+  claimBusterMiniWindow.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.25)';
 }
 
 // NEW: Function to hide ClaimBuster mini window
@@ -1934,7 +1832,7 @@ function displayResults(result) {
     contentDiv.innerHTML = `
       <div class="ai-verdict-banner misleading">
         <div class="ai-verdict-title">❌ Analysis Failed</div>
-        <div class="ai-verdict-summary">${result.error || 'Unable to analyze this article. Please try again.'}</div>
+        <div class="ai-verdict-summary">${escapeHtml(result.error || 'Unable to analyze this article. Please try again.')}</div>
       </div>
       <div class="ai-action-buttons">
         <button class="ai-btn ai-btn-primary" id="try-again-btn">Try Again</button>
@@ -2063,7 +1961,7 @@ function displayResults(result) {
           <div class="ai-confidence">${confidence}% Confidence</div>
         </div>
       </div>
-      <div class="ai-verdict-summary">${summary}</div>
+      <div class="ai-verdict-summary">${escapeHtml(summary)}</div>
     </div>
 
     <!-- Navigation Tabs (Updated for Multimedia Content) -->
@@ -2080,13 +1978,13 @@ function displayResults(result) {
       <div class="ai-tab-content active" id="tab-overview">
         <div class="ai-section">
           <h4>Quick Summary</h4>
-          <p>${analysis.quick_summary}</p>
+          <p>${escapeHtml(analysis.quick_summary || summary)}</p>
         </div>
         ${analysis.red_flags && Array.isArray(analysis.red_flags) && analysis.red_flags.length > 0 ? `
           <div class="ai-section ai-red-flags">
             <h4>🚨 Red Flags</h4>
             <ul>
-              ${analysis.red_flags.map(flag => `<li>${flag}</li>`).join('')}
+              ${analysis.red_flags.map(flag => `<li>${escapeHtml(flag)}</li>`).join('')}
             </ul>
           </div>
         ` : ''}
@@ -2101,7 +1999,7 @@ function displayResults(result) {
           </div>
         </div>
           <h4>💡 Recommendations</h4>
-          <p>${recommendations}</p>
+          <p>${escapeHtml(recommendations)}</p>
         </div>
       </div>
 
@@ -2124,13 +2022,13 @@ function displayResults(result) {
             <div class="ai-section">
               <h4>Speech Patterns</h4>
               <div class="ai-tags">
-                ${analysis.multimedia_analysis.speech_patterns.map(pattern => `<span class="ai-tag">${pattern}</span>`).join('')}
+                ${analysis.multimedia_analysis.speech_patterns.map(pattern => `<span class="ai-tag">${escapeHtml(pattern)}</span>`).join('')}
               </div>
             </div>
           ` : ''}
           <div class="ai-section">
             <h4>Content Analysis</h4>
-            <p>${analysis.multimedia_analysis.content_summary || 'Video content has been analyzed for factual accuracy and potential misinformation.'}</p>
+            <p>${escapeHtml(analysis.multimedia_analysis.content_summary || 'Video content has been analyzed for factual accuracy and potential misinformation.')}</p>
           </div>
         ` : `
           <div class="ai-section">
@@ -2157,15 +2055,15 @@ function displayResults(result) {
           <div class="ai-section">
             <h4>Full Transcript</h4>
             <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 14px; line-height: 1.6;">
-              ${analysis.transcript.segments ? 
-                analysis.transcript.segments.map(segment => 
+              ${Array.isArray(analysis.transcript.segments) ?
+                analysis.transcript.segments.map(segment =>
                   `<div style="margin-bottom: 10px;">
-                    <span style="color: #666; font-size: 12px;">[${segment.start}s - ${segment.end}s]</span>
+                    <span style="color: #666; font-size: 12px;">[${escapeHtml(segment.start)}s - ${escapeHtml(segment.end)}s]</span>
                     <br>
-                    <span style="color: #333;">${segment.text}</span>
+                    <span style="color: #333;">${escapeHtml(segment.text)}</span>
                   </div>`
-                ).join('') : 
-                `<div style="color: #333;">${analysis.transcript.text || 'Transcript content will appear here after audio processing.'}</div>`
+                ).join('') :
+                `<div style="color: #333;">${escapeHtml(analysis.transcript.text || 'Transcript content will appear here after audio processing.')}</div>`
               }
             </div>
           </div>
@@ -2213,17 +2111,17 @@ function displayResults(result) {
                     ⏱️ ${moment.timestamp}
                   </span>
                 </div>
-                <div class="ai-claim-text">${moment.description || moment.text}</div>
-                <div class="ai-claim-explanation">${moment.reason || moment.explanation}</div>
+                <div class="ai-claim-text">${escapeHtml(moment.description || moment.text)}</div>
+                <div class="ai-claim-explanation">${escapeHtml(moment.reason || moment.explanation)}</div>
                 ${moment.suggested_verification ? `
                   <div class="ai-claim-context">
-                    <strong>Verification Suggestion:</strong> ${moment.suggested_verification}
+                    <strong>Verification Suggestion:</strong> ${escapeHtml(moment.suggested_verification)}
                   </div>
                 ` : ''}
                 ${moment.timestamp ? `
                   <div style="margin-top: 10px;">
-                    <button class="ai-btn ai-btn-secondary" onclick="seekToTimestamp('${moment.timestamp}')" style="font-size: 12px; padding: 6px 12px;">
-                      ▶️ Jump to ${moment.timestamp}
+                    <button class="ai-btn ai-btn-secondary ai-jump-btn" data-timestamp="${escapeHtml(moment.timestamp)}" style="font-size: 12px; padding: 6px 12px;">
+                      ▶️ Jump to ${escapeHtml(moment.timestamp)}
                     </button>
                   </div>
                 ` : ''}
@@ -2264,7 +2162,14 @@ console.log("INITIAL CONTENT SET - Summary:", summary, "Detailed:", analysis.det
 
   // Add tab switching functionality
   setupTabNavigation();
-  
+
+  // Wire up "Jump to timestamp" buttons. An inline onclick attribute would run
+  // in the page's main world (where seekToTimestamp is not defined) and can be
+  // blocked by the site's CSP, so attach listeners here instead.
+  contentDiv.querySelectorAll('.ai-jump-btn').forEach(btn => {
+    btn.addEventListener('click', () => seekToTimestamp(btn.dataset.timestamp));
+  });
+
   // NEW: Add ClaimBuster toggle functionality
   setupClaimBusterToggle(result);
   
@@ -2974,22 +2879,6 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
       showSiteNotification(message.supportedDomains);
       sendResponse({ status: 'notification_shown' });
       
-    } else if (message.type === 'SHOW_DASHBOARD_INFO') {
-      // Handle dashboard info request
-      if (!resultsPanel) createResultsPanel();
-      resultsPanel.style.display = 'block';
-      
-      const contentDiv = document.getElementById('ai-panel-content');
-      if (contentDiv) {
-        contentDiv.innerHTML = `
-          <div style="text-align: center; padding: 40px 20px;">
-            <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
-            <h3 style="margin: 0 0 12px 0; color: #333;">Dashboard Coming Soon</h3>
-            <p style="color: #666; margin: 0;">Advanced analytics and reporting features are in development.</p>
-          </div>
-        `;
-      }
-      sendResponse({ status: 'dashboard_shown' });
     }
     
   } catch (error) {
@@ -3172,24 +3061,16 @@ if (isNewsSite) {
   }, 20000); // Wait 20 seconds before cleaning cache
 }
 
-// Reset analysis state when navigating to new page or closing tab
-const originalPushState = history.pushState;
-const originalReplaceState = history.replaceState;
-
-history.pushState = function() {
-  originalPushState.apply(history, arguments);
-  // Only reset if it's a completely different article
-  if (window.location.pathname !== currentPageUrl.split('?')[0].split('#')[0]) {
-    resetPageState();
-  }
-};
-
-history.replaceState = function() {
-  originalReplaceState.apply(history, arguments);
+// Reset analysis state when navigating to a new page.
+// NOTE: Content scripts run in an isolated world, so patching
+// history.pushState here never sees the page's own calls (YouTube/TikTok
+// SPA navigation). Poll the URL instead.
+setInterval(function() {
   if (window.location.href !== currentPageUrl) {
+    console.log("URL change detected:", currentPageUrl, "->", window.location.href);
     resetPageState();
   }
-};
+}, 1500);
 
 window.addEventListener('popstate', function() {
   if (window.location.href !== currentPageUrl) {
@@ -3462,7 +3343,7 @@ function generateDetailedClaimsUserFriendly(claims) {
       <div class="ai-claimbuster-claim ai-priority-${priority}" style="background: ${priorityBg}; border-left: 4px solid ${priorityColor}; padding: 12px; margin: 8px 0; border-radius: 0 6px 6px 0;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
           <div style="flex: 1;">
-            <div style="font-size: 14px; line-height: 1.4; margin-bottom: 8px; color: #333;">${cleanText}</div>
+            <div style="font-size: 14px; line-height: 1.4; margin-bottom: 8px; color: #333;">${escapeHtml(cleanText)}</div>
             <div style="display: flex; gap: 10px; align-items: center;">
               <span style="font-size: 12px; padding: 4px 8px; background: ${priorityColor}20; color: ${priorityColor}; border-radius: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
                 ${priorityIcon} ${priorityText}

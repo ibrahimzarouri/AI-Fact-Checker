@@ -1,0 +1,8 @@
+# API keys - never commit real credentials
+config.js
+
+# Editor / OS noise
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

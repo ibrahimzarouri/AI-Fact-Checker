@@ -5,10 +5,11 @@
   "description": "AI-powered fact-checking for news articles and video content using OpenAI Whisper, GPT-4.1-nano, and ClaimBuster.",
   "permissions": [
     "activeTab",
-    "scripting", 
+    "scripting",
     "tabs",
     "storage",
-    "tabCapture"
+    "tabCapture",
+    "offscreen"
   ],
   "host_permissions": [
     "*://*.bild.de/*",
