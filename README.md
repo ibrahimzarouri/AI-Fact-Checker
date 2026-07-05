@@ -2,7 +2,7 @@
 
 A Chrome extension that fact-checks news articles and video content in real time. It combines **OpenAI GPT-4.1-nano** for in-depth misinformation and bias analysis, **OpenAI Whisper** for video/audio transcription, and the **ClaimBuster** academic API for sentence-level claim detection.
 
-Developed as a master's project by [Ibrahim Zarouri](https://github.com/ibrahimzarouri).
+Developed by [Ibrahim Zarouri](https://github.com/ibrahimzarouri) as part of an internship project.
 
 ## Features
 
